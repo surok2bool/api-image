@@ -144,4 +144,51 @@ class ImageController extends AbstractController
         return $response;
     }
 
+    /**
+     * Логика примерно следующая (хотя, возможно, я неверно понял задание): ищем оригинальное изображение,
+     * если такой файл существует - отдаем его, ставим isOrigin -> true. Если оригинал не найден -
+     * ищем измененное изображение из папки handled. Если не найден и такой файл, кидаем exception.
+     *
+     * @param string $filename
+     * @return JsonResponse
+     */
+    public function getImageInfo(string $filename): JsonResponse
+    {
+        $originPath = $_SERVER['DOCUMENT_ROOT'] . '/data/images/origin/' . $filename;
+        $handledPath = $_SERVER['DOCUMENT_ROOT'] . '/data/images/handled/' . $filename;
+        $finder = new Finder();
+
+        if (file_exists($originPath)) {
+            $origin = 'origin';
+            $isOrigin = true;
+            $finder->name($filename)->in($_SERVER['DOCUMENT_ROOT'] . '/data/images/origin/');
+        } elseif (file_exists($handledPath)) {
+            $origin = 'handled';
+            $isOrigin = false;
+            $finder->name($filename)->in($_SERVER['DOCUMENT_ROOT'] . '/data/images/handled/');
+        } else {
+            throw $this->createNotFoundException('File not found');
+        }
+
+        foreach ($finder as $file) {
+            $date = $file->getMTime();
+        }
+
+        $originLink = $this->generateUrl(
+            'get_image',
+            [
+                'origin' => $origin,
+                'filename' => $filename
+            ],
+            UrlGeneratorInterface::ABSOLUTE_PATH
+        );
+
+        $result = [
+            'origin' => $originLink,
+            'isOrigin' => $isOrigin,
+            'date' => $date
+        ];
+
+        return new JsonResponse($result);
+    }
 }

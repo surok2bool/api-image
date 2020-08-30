@@ -8,6 +8,10 @@ images:
     controller: App\Controller\ImageController::getImagesList
     methods: GET
 
+get_info_image:
+    path: /api/v1/images/{filename}
+    controller: App\Controller\ImageController::getImageInfo
+
 get_image:
     path: /image/{origin}/{filename}
     controller: App\Controller\ImageController::getImage
