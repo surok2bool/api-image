@@ -86,7 +86,6 @@ class ImageController extends AbstractController
 
         foreach ($finder as $file) {
 
-            $router = $this->container->get('router');
             $originLink = $this->generateUrl(
                 'get_image',
                 [
