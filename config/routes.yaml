@@ -1,3 +1,5 @@
-#index:
-#    path: /
-#    controller: App\Controller\DefaultController::index
+index:
+    path: /api/v1/images/upload
+    controller: App\Controller\ImageController::index
+    methods: POST
+
