@@ -51,7 +51,7 @@ class ImageUploader extends AbstractUploader
      */
     public function prepareFile(): void
     {
-        $this->handledFile = $this->originFile->clone();
+        $this->handledFile = clone $this->originFile;
         $this->handledFile->thumbnailImage(125, 0);
         $this->filename = $this->file->getClientOriginalName();
     }
