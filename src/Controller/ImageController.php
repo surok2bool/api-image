@@ -6,6 +6,7 @@ use App\Service\ImageUploader\ImageUploader;
 use App\Service\ImageUploader\UploaderException\FileExistException;
 use App\Service\ImageUploader\UploaderException\FileTypeException;
 use App\Service\FileUploaderFactory;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -22,12 +23,13 @@ class ImageController extends AbstractController
      * в ответ будем давать json, содержащий подробную информацию о каждом загруженном (или не загруженном)
      * файле (хотя, наверное, это уже избыточно).
      *
+     * @param LoggerInterface $logger
      * @param Request $request
      * @param FileUploaderFactory $uploaderFactory
      *
      * @return JsonResponse
      */
-    public function index(Request $request, FileUploaderFactory $uploaderFactory): JsonResponse
+    public function index(LoggerInterface $logger, Request $request, FileUploaderFactory $uploaderFactory): JsonResponse
     {
         /**
          * @var $result - результирующий массив, в который складываем результаты загрузки файлов
@@ -38,6 +40,8 @@ class ImageController extends AbstractController
          * @var UploadedFile $file
          */
         foreach ($request->files as $file) {
+            $logger->info('Get file ' . $file->getClientOriginalName());
+
             $uploadFileInfo = [
                 'filename' => $file->getClientOriginalName(),
                 'result' => false,
@@ -55,10 +59,15 @@ class ImageController extends AbstractController
                 }
 
             } catch (FileTypeException $e) {
+                $logger->error('Wrong type of file');
                 $uploadFileInfo['error'] = $e->getMessage();
             } catch (\ImagickException $exception) {
+                $logger->error('Catch Imagick Exception');
+                $logger->error($exception->getMessage());
                 $uploadFileInfo['error'] = $exception->getMessage();
             } catch (FileExistException $exception) {
+                $logger->error('Catch FileExistException');
+                $logger->error($exception->getMessage());
                 $uploadFileInfo['error'] = $exception->getMessage();
             }
 
@@ -72,18 +81,25 @@ class ImageController extends AbstractController
     }
 
     /**
+     * @param LoggerInterface $logger
      * @return JsonResponse
      */
-    public function getImagesList(): JsonResponse
+    public function getImagesList(LoggerInterface $logger): JsonResponse
     {
         $finder = new Finder();
 
+        /**
+         * Проводим поиск только по оригинальным изображениям
+         */
         $finder->files()->in($_SERVER['DOCUMENT_ROOT'] . '/data/images/origin/');
 
         $result = [];
 
+        $logger->info('Found ' . $finder->count() . ' images');
+
         foreach ($finder as $file) {
 
+            $logger->info('Found ' . $file->getFilename());
             $originLink = $this->generateUrl(
                 'get_image',
                 [
@@ -92,6 +108,8 @@ class ImageController extends AbstractController
                 ],
                 UrlGeneratorInterface::ABSOLUTE_PATH
             );
+
+            $logger->info('Original link: ' . $originLink);
 
             $handledLink = $this->generateUrl(
                 'get_image',
@@ -102,14 +120,18 @@ class ImageController extends AbstractController
                 UrlGeneratorInterface::ABSOLUTE_PATH
             );
 
+            $logger->info('Handled link: ' . $handledLink);
+
             $imageData = [
                 'origin' => $originLink,
                 'handled' => $handledLink,
                 'date' => $file->getMTime()
             ];
+
             $result[] = $imageData;
         }
 
+        $logger->info('Result: ' . json_encode($result));
         return new JsonResponse($result);
     }
 
@@ -117,13 +139,14 @@ class ImageController extends AbstractController
      * Метод просто возвращает файл (в ТЗ такого пункта не было, но поскольку в списке файлов необходимо
      * отдавать ссылки на изображения, полагаю, необходимо сделать эти ссылки рабочими)
      *
-     * @param string $filename
+     * @param LoggerInterface $logger
      * @param string $origin
-     * @param Request $request
+     * @param string $filename
      * @return Response
      */
-    public function getImage(Request $request, string $origin, string $filename): Response
+    public function getImage(LoggerInterface $logger, string $origin, string $filename): Response
     {
+        $logger->info('Try to get ' . $origin . ' file ' . $filename);
         $availableTypes = [
             ImageUploader::HANDLED_PATH,
             ImageUploader::ORIGINAL_PATH
@@ -135,6 +158,7 @@ class ImageController extends AbstractController
         if (!empty($typeImage) && file_exists($filename)) {
             $response = $this->file($filename);
         } else {
+            $logger->alert('File ' . $filename . ' not found!');
             $response = new Response();
             $response->setStatusCode(404);
             $response->setContent('File not found!');
@@ -147,10 +171,11 @@ class ImageController extends AbstractController
      * если такой файл существует - отдаем его, ставим isOrigin -> true. Если оригинал не найден -
      * ищем измененное изображение из папки handled. Если не найден и такой файл, кидаем exception.
      *
+     * @param LoggerInterface $logger
      * @param string $filename
      * @return JsonResponse
      */
-    public function getImageInfo(string $filename): JsonResponse
+    public function getImageInfo(LoggerInterface $logger, string $filename): JsonResponse
     {
         $originPath = $_SERVER['DOCUMENT_ROOT'] . '/data/images/origin/' . $filename;
         $handledPath = $_SERVER['DOCUMENT_ROOT'] . '/data/images/handled/' . $filename;
@@ -165,6 +190,7 @@ class ImageController extends AbstractController
             $isOrigin = false;
             $finder->name($filename)->in($_SERVER['DOCUMENT_ROOT'] . '/data/images/handled/');
         } else {
+            $logger->alert('File ' . $filename . ' not found!');
             throw $this->createNotFoundException('File not found');
         }
 
@@ -172,7 +198,7 @@ class ImageController extends AbstractController
             $date = $file->getMTime();
         }
 
-        $originLink = $this->generateUrl(
+        $link = $this->generateUrl(
             'get_image',
             [
                 'origin' => $origin,
@@ -182,11 +208,12 @@ class ImageController extends AbstractController
         );
 
         $result = [
-            'origin' => $originLink,
+            'origin' => $link,
             'isOrigin' => $isOrigin,
             'date' => $date
         ];
 
+        $logger->info('Result: ' . json_encode($result));
         return new JsonResponse($result);
     }
 }
