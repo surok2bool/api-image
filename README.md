@@ -1,0 +1,1 @@
+Примеры запросов для Postman: https://documenter.getpostman.com/view/10833113/TVCcXp4n#1f1b8bef-3343-482c-9db3-3a98d4b94497
