@@ -6,8 +6,6 @@ use App\Service\ImageUploader\ImageUploader;
 use App\Service\ImageUploader\UploaderException\FileExistException;
 use App\Service\ImageUploader\UploaderException\FileTypeException;
 use App\Service\FileUploaderFactory;
-use App\Service\ImageUploader\UploaderInterface\UploaderInterface;
-use PhpParser\Node\Scalar\MagicConst\File;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\File\UploadedFile;

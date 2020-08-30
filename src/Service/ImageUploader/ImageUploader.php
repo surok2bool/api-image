@@ -7,7 +7,6 @@ namespace App\Service\ImageUploader;
 use App\Service\ImageUploader\UploaderException\FileExistException;
 use Imagick;
 use ImagickException;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class ImageUploader extends AbstractUploader
