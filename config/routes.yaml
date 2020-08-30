@@ -3,3 +3,12 @@ index:
     controller: App\Controller\ImageController::index
     methods: POST
 
+images:
+    path: /api/v1/images/
+    controller: App\Controller\ImageController::getImagesList
+    methods: GET
+
+get_image:
+    path: /image/{origin}/{filename}
+    controller: App\Controller\ImageController::getImage
+    methods: GET

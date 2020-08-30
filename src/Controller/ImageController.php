@@ -6,13 +6,14 @@ use App\Service\ImageUploader\UploaderException\FileExistException;
 use App\Service\ImageUploader\UploaderException\FileTypeException;
 use App\Service\FileUploaderFactory;
 use App\Service\ImageUploader\UploaderInterface\UploaderInterface;
+use PhpParser\Node\Scalar\MagicConst\File;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class ImageController extends AbstractController
 {
@@ -71,5 +72,76 @@ class ImageController extends AbstractController
         return $response;
     }
 
+    /**
+     * @return JsonResponse
+     */
+    public function getImagesList(): JsonResponse
+    {
+        $finder = new Finder();
+
+        $finder->files()->in($_SERVER['DOCUMENT_ROOT'] . '/data/images/origin/');
+
+        $result = [];
+
+        foreach ($finder as $file) {
+
+            $router = $this->container->get('router');
+            $originLink = $this->generateUrl(
+                'get_image',
+                [
+                    'origin' => 'origin',
+                    'filename' => $file->getFilename()
+                ],
+                UrlGeneratorInterface::ABSOLUTE_PATH
+            );
+
+            $handledLink = $this->generateUrl(
+                'get_image',
+                [
+                    'origin' => 'handled',
+                    'filename' => $file->getFilename()
+                ],
+                UrlGeneratorInterface::ABSOLUTE_PATH
+            );
+
+            $imageData = [
+                'origin' => $originLink,
+                'handled' => $handledLink,
+                'date' => $file->getMTime()
+            ];
+            $result[] = $imageData;
+        }
+
+        return new JsonResponse($result);
+    }
+
+    /**
+     * Метод просто возвращает файл (в ТЗ такого пункта не было, но поскольку в списке файлов необходимо
+     * отдавать ссылки на изображения, полагаю, необходимо сделать эти ссылки рабочими)
+     *
+     * @param string $filename
+     * @param string $origin
+     * @param Request $request
+     * @return Response
+     */
+    public function getImage(Request $request, string $origin, string $filename): Response
+    {
+        $availableTypes = [
+            'handled',
+            'origin'
+        ];
+
+        $typeImage = in_array($origin, $availableTypes) ? $origin : '';
+        $filename = $_SERVER['DOCUMENT_ROOT'] . '/data/images/' . $typeImage . '/' . $filename;
+
+        if (!empty($typeImage) && file_exists($filename)) {
+            $response = $this->file($filename);
+        } else {
+            $response = new Response();
+            $response->setStatusCode(404);
+            $response->setContent('File not found!');
+        }
+        return $response;
+    }
 
 }
