@@ -9,9 +9,6 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 abstract class AbstractUploader implements UploaderInterface
 {
-    const ORIGINAL_PATH = 'origin';
-    const HANDLED_PATH = 'handled';
-
     /**
      * @var UploadedFile $file
      */

@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class ImageUploader extends AbstractUploader
 {
+    const ORIGINAL_PATH = 'origin';
+    const HANDLED_PATH = 'handled';
 
     protected $originPath = '/data/images/origin/';
     protected $handledPath = '/data/images/handled/';

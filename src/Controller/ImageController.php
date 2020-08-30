@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Service\ImageUploader\ImageUploader;
 use App\Service\ImageUploader\UploaderException\FileExistException;
 use App\Service\ImageUploader\UploaderException\FileTypeException;
 use App\Service\FileUploaderFactory;
@@ -127,8 +128,8 @@ class ImageController extends AbstractController
     public function getImage(Request $request, string $origin, string $filename): Response
     {
         $availableTypes = [
-            'handled',
-            'origin'
+            ImageUploader::HANDLED_PATH,
+            ImageUploader::ORIGINAL_PATH
         ];
 
         $typeImage = in_array($origin, $availableTypes) ? $origin : '';
